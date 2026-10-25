@@ -24,9 +24,20 @@ detached helper 去做第二件事 —— 但 helper 和宿主在**同一个 cgr
 
 ## 安装
 
+要求：dsh 0.2.x 的 web profile；宿主由 **systemd 用户级 unit** 托管，且该 unit 的 `Restart=always`。
+不满足时按钮不会假装能用 —— 它会在那一行写清拒绝的理由。
+
 ```bash
-cd ~/.dsh/profiles/web
-dsh plugin --profile web add /home/ml88wwqq/workspace/dsh-systemd-restart
+git clone https://github.com/534056668/dsh-systemd-restart.git
+cd dsh-systemd-restart
+bash install.sh
+```
+
+`install.sh` 先给 profile 的 `package.json` / `pnpm-lock.yaml` 打带时间戳的备份，再执行
+`dsh plugin --profile web add "$(pwd)"`，最后打印装配状态。不想用脚本，等价的一步是：
+
+```bash
+cd ~/.dsh/profiles/web && dsh plugin --profile web add /path/to/dsh-systemd-restart
 ```
 
 装完**刷新一次页面**：宿主半会随 `patchReload: live` 立即生效，客户端那一行在页面加载时组装。

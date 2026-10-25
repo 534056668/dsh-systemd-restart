@@ -12,6 +12,7 @@ set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROFILE="${DSH_PROFILE:-web}"
+UNIT="${DSH_UNIT:-dsh-web}"
 PROFILE_DIR="$HOME/.dsh/profiles/$PROFILE"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 
@@ -51,10 +52,10 @@ dsh --profile "$PROFILE" --dump-config 2>/dev/null | grep -n "systemd-restart" |
 echo
 echo "装好了。宿主半会随 patchReload 立即可用；浏览器刷新一次（Ctrl+Shift+R）"
 echo "就能在 设置 → 通用 里看到「重启 dsh web」那一行。"
-echo "以后要走冷启动：systemctl --user restart dsh-web"
+echo "以后要走冷启动：systemctl --user restart $UNIT"
 
 if [ "${1:-}" = "--restart" ]; then
   echo
-  echo "== 重启 dsh-web =="
-  systemctl --user restart dsh-web
+  echo "== 重启 $UNIT =="
+  systemctl --user restart "$UNIT"
 fi
