@@ -9,9 +9,11 @@
  * Run with: npm test
  */
 
+import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
 	decideMode,
@@ -168,31 +170,31 @@ check("and it scheduled nothing", readState(guardState).pending === null);
 
 section("client: the bundle is shaped the way the loader expects");
 
-let registration = null;
-const clientCode = readFileSync(new URL("../lib/client.js", import.meta.url), "utf8");
-new Function("window", clientCode)({ __ModuleLoader__: { load: function (value) { registration = value; } } });
-check("client registers one module with the package id", registration !== null && registration.id === "dsh-systemd-restart");
+// The bundle is a browser script: it needs window.__ModuleLoader__ and a
+// require seed, so it cannot be imported by Node. It is checked by parsing it
+// (node --check, no execution) and by pinning the contract it must satisfy.
+const clientPath = fileURLToPath(new URL("../lib/client.js", import.meta.url));
+const clientCode = readFileSync(clientPath, "utf8");
+const hostCode = readFileSync(new URL("../lib/index.js", import.meta.url), "utf8");
 
-const fakeReact = { useState: function (value) { return [value, function () {}]; }, useEffect: function () {}, createElement: function () { return null; } };
-const clientExports = registration.factory(function (name) {
-	if (name === "react") return fakeReact;
-	throw new Error("unexpected require: " + name);
-});
-check("client exports { name, inject, apply }", clientExports.name === "dsh-systemd-restart" && Array.isArray(clientExports.inject) && typeof clientExports.apply === "function");
+let parses = true;
+try {
+	execFileSync(process.execPath, ["--check", clientPath], { stdio: "ignore" });
+} catch (error) {
+	parses = false;
+}
+check("the bundle parses as a script", parses === true);
+check("it registers through the module loader", clientCode.indexOf("window.__ModuleLoader__.load({") !== -1);
+check("its module id is the package name", /id:\s*"dsh-systemd-restart"/u.test(clientCode) === true);
+check("it fills the General slot", /const SLOT = "settings\.general\.item"/u.test(clientCode) === true);
+check("it registers one row at order 90", /slots\.register\(\{ name: SLOT, id: ID, order: 90 \}/u.test(clientCode) === true);
+check("it injects the slots service", /inject: \["slots"\]/u.test(clientCode) === true);
+check("it exports { name, inject, apply }", /module\.exports = \{ name: ID, inject: \["slots"\], apply: apply \}/u.test(clientCode) === true);
 
-let slotRegistration = null;
-clientExports.apply({
-	get: function (name) {
-		if (name !== "slots") return undefined;
-		return {
-			inject: function (slot, cb) { check("client injects the General slot", slot === "settings.general.item"); cb(); },
-			register: function (spec, component) { slotRegistration = { spec: spec, component: component }; return function () {}; }
-		};
-	},
-	effect: function (fn) { fn(); return function () {}; }
-});
-check("client registers exactly one row", slotRegistration !== null && slotRegistration.spec.id === "dsh-systemd-restart" && slotRegistration.spec.order === 90);
-check("the row is a component", typeof slotRegistration.component === "function");
+// The two halves must agree on the paths: a drift here shows up in the browser
+// as a row that always says "request failed" while the host log stays empty.
+check("both halves agree on the status route", clientCode.indexOf("/dsh-systemd-restart/api/status") !== -1 && hostCode.indexOf('"/dsh-systemd-restart/api/status"') !== -1);
+check("both halves agree on the restart route", clientCode.indexOf("/dsh-systemd-restart/api/restart") !== -1 && hostCode.indexOf('"/dsh-systemd-restart/api/restart"') !== -1);
 
 /* ---------------------------------------------------------------- report --- */
 

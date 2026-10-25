@@ -80,7 +80,7 @@ dsh plugin --profile web add /home/ml88wwqq/workspace/dsh-systemd-restart
 ## 自检
 
 ```bash
-npm test          # 42 项离线断言：决策逻辑、两个路由的围栏与拒绝、循环守卫、boot 记账、客户端 bundle 形状
+npm test          # 46 项离线断言：决策逻辑、两个路由的围栏与拒绝、循环守卫、boot 记账、客户端 bundle 与两个半边的路径一致性
 ```
 
 测试**从不真的重启**任何东西：唯一会触发退出的那条路径（合法 POST + 非 off 模式）被刻意排除。

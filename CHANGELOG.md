@@ -13,3 +13,5 @@
 - Boot bookkeeping: downtime of the last restart is reported back into the row.
 - Client polls the boot id and reloads the page by itself once the new process
   is serving.
+- `dsh-plugin-doctor check` passes on this host (isolated install + Web profile
+  startup probe), and `npm test` covers 46 offline assertions.
