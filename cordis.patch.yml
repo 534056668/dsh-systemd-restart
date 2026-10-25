@@ -1,0 +1,20 @@
+# dsh-systemd-restart bundle patch: the host row this plugin mounts.
+#
+# Listing this package in the profile's `dsh.profile.bundles` applies exactly
+# this patch at boot — `dsh plugin --profile web add <path>` does both by itself.
+# Do not also insert the same row by hand in the profile's own cordis.patch.yml:
+# one row, one mount, otherwise boot fails with a duplicate loader entry id.
+#
+# To change a setting, add an id-targeted row to the PROFILE's cordis.patch.yml
+# (`- id: systemd-restart` + a `config:` block). That replaces the whole config
+# object below — it is not merged key by key.
+- insert:
+    - id: systemd-restart
+      name: dsh-systemd-restart
+      config:
+        mode: auto
+        delayMs: 1500
+        unit: ''
+        stateFile: ''
+        maxRestarts: 3
+        windowMs: 600000
